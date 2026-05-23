@@ -39,7 +39,12 @@ async function fetchTodayMatches() {
   return data.matches || [];
 }
 
+const WC_START = new Date('2026-06-11T00:00:00Z');
+
 async function hasTodayOrLiveMatches() {
+  // Don't sync before the tournament starts
+  if (new Date() < WC_START) return false;
+
   const now = new Date();
   const start = new Date(now); start.setHours(0, 0, 0, 0);
   const end   = new Date(now); end.setHours(23, 59, 59, 999);
@@ -54,29 +59,21 @@ async function findMatchInDB(homeTeam, awayTeam) {
   const a = normalizeName(homeTeam);
   const b = normalizeName(awayTeam);
 
-  // Try exact order
+  // Try exact match in normal order
   let { rows } = await pool.query(
     'SELECT id, status, score_a, score_b FROM matches WHERE team_a=$1 AND team_b=$2',
     [a, b]
   );
   if (rows.length) return { match: rows[0], swapped: false };
 
-  // Try swapped order
+  // Try exact match in swapped order
   ({ rows } = await pool.query(
     'SELECT id, status, score_a, score_b FROM matches WHERE team_a=$1 AND team_b=$2',
     [b, a]
   ));
   if (rows.length) return { match: rows[0], swapped: true };
 
-  // Fuzzy: first word of each team name
-  ({ rows } = await pool.query(
-    `SELECT id, status, score_a, score_b FROM matches
-     WHERE (LOWER(team_a) LIKE $1 OR LOWER(team_b) LIKE $1)
-       AND (LOWER(team_a) LIKE $2 OR LOWER(team_b) LIKE $2)`,
-    [`%${a.split(' ')[0].toLowerCase()}%`, `%${b.split(' ')[0].toLowerCase()}%`]
-  ));
-  if (rows.length) return { match: rows[0], swapped: false };
-
+  // No fuzzy matching — only exact names to avoid false positives
   return null;
 }
 
