@@ -17,6 +17,7 @@ const matchRoutes = require('./routes/matches');
 const predictionRoutes = require('./routes/predictions');
 const leaderboardRoutes = require('./routes/leaderboard');
 const standingsRoutes = require('./routes/standings');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 const server = http.createServer(app);
@@ -53,6 +54,7 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/predictions', predictionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/standings', standingsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Serve built frontend in production
 const frontendDist = path.join(__dirname, '../../frontend/dist');
