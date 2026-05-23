@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Matches from './pages/Matches';
 import Leaderboard from './pages/Leaderboard';
 import Admin from './pages/Admin';
+import Grupos from './pages/Grupos';
 import NavBar from './components/NavBar';
 
 function AppRoutes() {
@@ -28,6 +29,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/partidos" element={<Matches />} />
+        <Route path="/grupos" element={<Grupos />} />
         <Route path="/tabla" element={<Leaderboard />} />
         <Route path="/admin" element={user.role === 'admin' ? <Admin /> : <Navigate to="/" />} />
         <Route path="*" element={<Navigate to="/" />} />
