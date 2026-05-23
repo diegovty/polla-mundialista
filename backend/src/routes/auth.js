@@ -10,7 +10,6 @@ passport.use(new GoogleStrategy({
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: `${process.env.BASE_URL}/api/auth/google/callback`,
 }, async (accessToken, refreshToken, profile, done) => {
-  console.log('[OAuth] callback hit, profile id:', profile?.id, 'email:', profile?.emails?.[0]?.value);
   try {
     const { rows } = await pool.query(
       'SELECT * FROM users WHERE google_id = $1',
@@ -42,7 +41,6 @@ passport.use(new GoogleStrategy({
 
     done(null, newUser[0]);
   } catch (err) {
-    console.error('[OAuth] strategy error:', err.message);
     done(err);
   }
 }));
@@ -63,12 +61,10 @@ router.get('/google', passport.authenticate('google', {
 
 router.get('/google/callback',
   (req, res, next) => {
-    passport.authenticate('google', (err, user, info) => {
-      console.log('[OAuth callback] err:', err?.message, '| user:', user?.id, '| info:', JSON.stringify(info));
-      if (err || !user) return res.redirect(`${process.env.CLIENT_URL}/?auth_error=1`);
+    passport.authenticate('google', (err, user) => {
+      if (err || !user) return res.redirect(`${process.env.CLIENT_URL}/`);
       req.logIn(user, (loginErr) => {
-        if (loginErr) { console.error('[OAuth login] error:', loginErr.message); return next(loginErr); }
-        console.log('[OAuth] login success, user:', user.id, user.email);
+        if (loginErr) return next(loginErr);
         res.redirect(process.env.CLIENT_URL || '/');
       });
     })(req, res, next);
