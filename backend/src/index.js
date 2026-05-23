@@ -25,6 +25,7 @@ const io = new Server(server, {
   cors: { origin: CLIENT_URL, credentials: true },
 });
 
+app.set('trust proxy', 1); // Railway sits behind a reverse proxy
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
 
@@ -37,7 +38,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: 'lax',
   },
 }));
 
