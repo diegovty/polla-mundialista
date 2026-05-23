@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs');
 const { pool } = require('./db/pool');
 const { setupSocket } = require('./socket');
+const { startSync } = require('./services/footballSync');
 
 const authRoutes = require('./routes/auth');
 const matchRoutes = require('./routes/matches');
@@ -59,6 +60,7 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(frontendDist)) {
 }
 
 setupSocket(io);
+startSync(io);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server on http://localhost:${PORT}`));
