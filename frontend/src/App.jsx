@@ -6,6 +6,7 @@ import Matches from './pages/Matches';
 import Leaderboard from './pages/Leaderboard';
 import Admin from './pages/Admin';
 import Grupos from './pages/Grupos';
+import MisPronosticos from './pages/MisPronosticos';
 import NavBar from './components/NavBar';
 
 function AppRoutes() {
@@ -29,6 +30,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/partidos" element={<Matches />} />
+        <Route path="/mis-picks" element={<MisPronosticos />} />
         <Route path="/grupos" element={<Grupos />} />
         <Route path="/tabla" element={<Leaderboard />} />
         <Route path="/admin" element={user.role === 'admin' ? <Admin /> : <Navigate to="/" />} />

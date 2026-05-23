@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 const tabs = [
   { to: '/', label: 'Inicio', icon: '🏠' },
   { to: '/partidos', label: 'Partidos', icon: '⚽' },
+  { to: '/mis-picks', label: 'Mis picks', icon: '📋' },
   { to: '/grupos', label: 'Grupos', icon: '🏟️' },
   { to: '/tabla', label: 'Tabla', icon: '🏆' },
 ];
