@@ -32,13 +32,17 @@ export default function Matches() {
     return true;
   });
 
-  // Group by group_name for group stage
+  // Group by calendar date, sorted chronologically
   const grouped = {};
-  filtered.forEach(m => {
-    const key = m.stage === 'group' ? `Grupo ${m.group_name}` : m.stage || 'Eliminatorias';
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(m);
-  });
+  [...filtered]
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .forEach(m => {
+      const key = new Date(m.scheduled_at).toLocaleDateString('es-MX', {
+        weekday: 'long', day: 'numeric', month: 'long',
+      });
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(m);
+    });
 
   const pendingPreds = matches.filter(
     m => m.status === 'upcoming' &&
