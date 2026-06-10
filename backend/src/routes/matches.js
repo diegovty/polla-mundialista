@@ -37,6 +37,31 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
+// Get all predictions for a match (only once it has started)
+router.get('/:id/predictions', requireAuth, async (req, res) => {
+  try {
+    const { rows: [match] } = await pool.query(
+      'SELECT status FROM matches WHERE id=$1', [req.params.id]
+    );
+    if (!match) return res.status(404).json({ error: 'Match not found' });
+    if (match.status === 'upcoming') {
+      return res.status(403).json({ error: 'El partido aún no ha comenzado' });
+    }
+    const { rows } = await pool.query(
+      `SELECT p.predicted_a, p.predicted_b, p.points_earned,
+              u.name, u.avatar
+       FROM predictions p
+       JOIN users u ON u.id = p.user_id
+       WHERE p.match_id = $1
+       ORDER BY COALESCE(p.points_earned, -1) DESC, u.name ASC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Admin: set match result and calculate points
 router.put('/:id/result', requireAdmin, async (req, res) => {
   const { score_a, score_b, status } = req.body;

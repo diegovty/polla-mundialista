@@ -3,12 +3,14 @@ import api from '../lib/api';
 import { useSocket } from '../hooks/useSocket';
 import MatchCard from '../components/MatchCard';
 import PredictionModal from '../components/PredictionModal';
+import PredictionsViewModal from '../components/PredictionsViewModal';
 
 const TABS = ['Todos', 'Por jugar', 'Finalizados'];
 
 export default function Matches() {
   const [matches, setMatches] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [tab, setTab] = useState('Por jugar');
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +97,14 @@ export default function Matches() {
               </h2>
               <div className="space-y-2">
                 {groupMatches.map(m => (
-                  <MatchCard key={m.id} match={m} onClick={() => setSelected(m)} />
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    onClick={() => m.status === 'upcoming' && new Date(m.scheduled_at) > new Date()
+                      ? setSelected(m)
+                      : setViewing(m)
+                    }
+                  />
                 ))}
               </div>
             </div>
@@ -108,6 +117,12 @@ export default function Matches() {
           match={selected}
           onClose={() => setSelected(null)}
           onSaved={fetchMatches}
+        />
+      )}
+      {viewing && (
+        <PredictionsViewModal
+          match={viewing}
+          onClose={() => setViewing(null)}
         />
       )}
     </div>
