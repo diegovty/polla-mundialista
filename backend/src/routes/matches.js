@@ -44,7 +44,8 @@ router.get('/:id/predictions', requireAuth, async (req, res) => {
       'SELECT status FROM matches WHERE id=$1', [req.params.id]
     );
     if (!match) return res.status(404).json({ error: 'Match not found' });
-    if (match.status === 'upcoming') {
+    // Block only if upcoming AND scheduled time hasn't passed yet
+    if (match.status === 'upcoming' && new Date(match.scheduled_at) > new Date()) {
       return res.status(403).json({ error: 'El partido aún no ha comenzado' });
     }
     const { rows } = await pool.query(

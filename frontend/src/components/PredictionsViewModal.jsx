@@ -4,14 +4,19 @@ import api from '../lib/api';
 export default function PredictionsViewModal({ match, onClose }) {
   const [preds, setPreds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     api.get(`/matches/${match.id}/predictions`)
       .then(r => { setPreds(r.data); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        setError(err.response?.data?.error || 'Error cargando pronósticos');
+        setLoading(false);
+      });
   }, [match.id]);
 
   const isFinished = match.status === 'finished';
+  const isLive = match.status === 'live' || new Date(match.scheduled_at) <= new Date();
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
@@ -32,11 +37,11 @@ export default function PredictionsViewModal({ match, onClose }) {
               <span className="font-bold text-sm">{match.team_a}</span>
             </div>
             <div className="text-center px-3">
-              {isFinished || match.status === 'live' ? (
+              {isFinished ? (
                 <span className="text-xl font-black">{match.score_a} – {match.score_b}</span>
-              ) : (
+              ) : isLive ? (
                 <span className="text-sm font-bold text-red-500 animate-pulse">EN VIVO</span>
-              )}
+              ) : null}
             </div>
             <div className="flex items-center gap-2 flex-1 justify-end">
               <span className="font-bold text-sm">{match.team_b}</span>
@@ -50,6 +55,8 @@ export default function PredictionsViewModal({ match, onClose }) {
         <div className="overflow-y-auto flex-1 py-2">
           {loading ? (
             <div className="text-center text-gray-400 py-8 animate-pulse">Cargando...</div>
+          ) : error ? (
+            <div className="text-center text-red-400 py-8 px-6 text-sm">{error}</div>
           ) : preds.length === 0 ? (
             <div className="text-center text-gray-400 py-8">Nadie pronosticó este partido</div>
           ) : (
