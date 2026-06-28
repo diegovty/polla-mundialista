@@ -86,11 +86,22 @@ export default function MisPronosticos() {
     return true;
   });
 
-  // Group by matchday
+  const STAGE_LABELS = {
+    group: (m) => `Jornada ${m.matchday}`,
+    last32: () => '16vos de final',
+    last16: () => 'Octavos de final',
+    quarter: () => 'Cuartos de final',
+    semi: () => 'Semifinal',
+    third: () => 'Tercer lugar',
+    final: () => 'Final',
+  };
+
+  // Group by stage+matchday key
   const byDay = filtered.reduce((acc, m) => {
-    const d = m.matchday;
-    if (!acc[d]) acc[d] = [];
-    acc[d].push(m);
+    const labelFn = STAGE_LABELS[m.stage];
+    const key = labelFn ? labelFn(m) : m.stage;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(m);
     return acc;
   }, {});
 
@@ -117,7 +128,7 @@ export default function MisPronosticos() {
       {/* Header */}
       <div className="bg-wc-green text-white px-4 pt-12 pb-6">
         <h1 className="text-2xl font-black mb-1">Mis pronósticos</h1>
-        <p className="text-green-200 text-sm">{matches.length} partidos · fase de grupos</p>
+        <p className="text-green-200 text-sm">{matches.length} partidos · Mundial 2026</p>
 
         {done.length > 0 && (
           <div className="grid grid-cols-4 gap-2 mt-4">
@@ -163,7 +174,7 @@ export default function MisPronosticos() {
           <div key={day} className="card">
             <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Jornada {day}
+                {day}
               </span>
               <span className="text-xs text-gray-400">
                 {dayMatches.filter(m => m.status === 'finished').length}/{dayMatches.length} jugados

@@ -34,7 +34,11 @@ export default function MatchCard({ match, onClick }) {
         {/* Top row: group + status */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-gray-400 font-medium">
-            {match.stage === 'group' ? `Grupo ${match.group_name} · Jornada ${match.matchday}` : match.stage?.toUpperCase()}
+            {match.stage === 'group'
+              ? `Grupo ${match.group_name} · Jornada ${match.matchday}`
+              : { last32: '16vos de final', last16: 'Octavos de final',
+                  quarter: 'Cuartos de final', semi: 'Semifinal',
+                  third: 'Tercer lugar', final: 'Final' }[match.stage] || match.stage}
           </span>
           <div className="flex items-center gap-2">
             {statusBadge && (
