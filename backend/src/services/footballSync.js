@@ -16,6 +16,21 @@ const NAME_MAP = {
   'Turkey':                       'Türkiye',
 };
 
+const FLAGS = {
+  'Mexico': '🇲🇽', 'South Africa': '🇿🇦', 'South Korea': '🇰🇷', 'Czechia': '🇨🇿',
+  'Canada': '🇨🇦', 'Switzerland': '🇨🇭', 'Qatar': '🇶🇦', 'Bosnia-Herzegovina': '🇧🇦',
+  'Brazil': '🇧🇷', 'Morocco': '🇲🇦', 'Haiti': '🇭🇹', 'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'United States': '🇺🇸', 'Paraguay': '🇵🇾', 'Australia': '🇦🇺', 'Türkiye': '🇹🇷',
+  'Germany': '🇩🇪', "Côte d'Ivoire": '🇨🇮', 'Curaçao': '🇨🇼', 'Ecuador': '🇪🇨',
+  'Netherlands': '🇳🇱', 'Japan': '🇯🇵', 'Tunisia': '🇹🇳', 'Sweden': '🇸🇪',
+  'Belgium': '🇧🇪', 'Egypt': '🇪🇬', 'Iran': '🇮🇷', 'New Zealand': '🇳🇿',
+  'Spain': '🇪🇸', 'Uruguay': '🇺🇾', 'Saudi Arabia': '🇸🇦', 'Cabo Verde': '🇨🇻',
+  'France': '🇫🇷', 'Senegal': '🇸🇳', 'Norway': '🇳🇴', 'Iraq': '🇮🇶',
+  'Argentina': '🇦🇷', 'Algeria': '🇩🇿', 'Austria': '🇦🇹', 'Jordan': '🇯🇴',
+  'Portugal': '🇵🇹', 'Colombia': '🇨🇴', 'Uzbekistan': '🇺🇿', 'Congo DR': '🇨🇩',
+  'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Croatia': '🇭🇷', 'Ghana': '🇬🇭', 'Panama': '🇵🇦',
+};
+
 function normalizeName(name) {
   return NAME_MAP[name] || name;
 }
@@ -55,7 +70,7 @@ async function hasTodayOrLiveMatches() {
   return parseInt(rows[0].count) > 0;
 }
 
-async function findMatchInDB(homeTeam, awayTeam) {
+async function findMatchInDB(homeTeam, awayTeam, utcDate) {
   const a = normalizeName(homeTeam);
   const b = normalizeName(awayTeam);
 
@@ -73,7 +88,31 @@ async function findMatchInDB(homeTeam, awayTeam) {
   ));
   if (rows.length) return { match: rows[0], swapped: true };
 
-  // No fuzzy matching — only exact names to avoid false positives
+  // Fallback: find a "Por definir" placeholder within ±3 hours of this match's time
+  // and claim it by updating the team names and flags
+  if (utcDate) {
+    const matchTime = new Date(utcDate);
+    const from = new Date(matchTime.getTime() - 3 * 60 * 60 * 1000);
+    const to   = new Date(matchTime.getTime() + 3 * 60 * 60 * 1000);
+    ({ rows } = await pool.query(
+      `SELECT id, status, score_a, score_b FROM matches
+       WHERE team_a = 'Por definir' AND scheduled_at BETWEEN $1 AND $2
+       ORDER BY ABS(EXTRACT(EPOCH FROM (scheduled_at - $3::timestamptz)))
+       LIMIT 1`,
+      [from, to, matchTime]
+    ));
+    if (rows.length) {
+      const flagA = FLAGS[a] || '🏳️';
+      const flagB = FLAGS[b] || '🏳️';
+      await pool.query(
+        'UPDATE matches SET team_a=$1, team_b=$2, flag_a=$3, flag_b=$4 WHERE id=$5',
+        [a, b, flagA, flagB, rows[0].id]
+      );
+      console.log(`[FootballSync] Claimed TBD match #${rows[0].id} → ${a} vs ${b}`);
+      return { match: rows[0], swapped: false };
+    }
+  }
+
   return null;
 }
 
@@ -141,7 +180,7 @@ async function processApiMatch(apiMatch, io) {
   const ourStatus = mapStatus(apiMatch.status);
   if (!ourStatus) return;
 
-  const result = await findMatchInDB(apiMatch.homeTeam.name, apiMatch.awayTeam.name);
+  const result = await findMatchInDB(apiMatch.homeTeam.name, apiMatch.awayTeam.name, apiMatch.utcDate);
   if (!result) {
     console.log(`[FootballSync] No DB match for: ${apiMatch.homeTeam.name} vs ${apiMatch.awayTeam.name}`);
     return;
