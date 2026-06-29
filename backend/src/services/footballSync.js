@@ -203,7 +203,8 @@ async function processApiMatch(apiMatch, io) {
   // Skip if nothing changed
   if (match.status === ourStatus && match.score_a === scoreA && match.score_b === scoreB) return;
 
-  if (ourStatus === 'finished' && match.status !== 'finished') {
+  if (ourStatus === 'finished') {
+    // Always recalculate when finished — score may have been corrected after initial report
     await recalculatePoints(match.id, scoreA, scoreB, io);
   } else {
     await pool.query(
