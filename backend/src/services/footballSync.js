@@ -49,11 +49,20 @@ async function fetchTodayMatches() {
   // Fetch today AND yesterday to catch any stale upcoming matches
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-  const { data } = await axios.get(
-    `${API_BASE}/competitions/WC/matches?dateFrom=${yesterday}&dateTo=${today}`,
-    { headers: { 'X-Auth-Token': key }, timeout: 10000 }
-  );
-  return data.matches || [];
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const { data } = await axios.get(
+        `${API_BASE}/competitions/WC/matches?dateFrom=${yesterday}&dateTo=${today}`,
+        { headers: { 'X-Auth-Token': key }, timeout: 25000 }
+      );
+      return data.matches || [];
+    } catch (err) {
+      if (attempt === 2) throw err;
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  return [];
 }
 
 const WC_START = new Date('2026-06-11T00:00:00Z');
