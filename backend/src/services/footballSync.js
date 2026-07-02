@@ -46,9 +46,11 @@ async function fetchTodayMatches() {
   const key = process.env.FOOTBALL_API_KEY;
   if (!key) return [];
 
+  // Fetch today AND yesterday to catch any stale upcoming matches
   const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
   const { data } = await axios.get(
-    `${API_BASE}/competitions/WC/matches?dateFrom=${today}&dateTo=${today}`,
+    `${API_BASE}/competitions/WC/matches?dateFrom=${yesterday}&dateTo=${today}`,
     { headers: { 'X-Auth-Token': key }, timeout: 10000 }
   );
   return data.matches || [];
@@ -64,7 +66,10 @@ async function hasTodayOrLiveMatches() {
   const start = new Date(now); start.setHours(0, 0, 0, 0);
   const end   = new Date(now); end.setHours(23, 59, 59, 999);
   const { rows } = await pool.query(
-    `SELECT COUNT(*) FROM matches WHERE (scheduled_at BETWEEN $1 AND $2) OR status = 'live'`,
+    `SELECT COUNT(*) FROM matches
+     WHERE (scheduled_at BETWEEN $1 AND $2)
+        OR status = 'live'
+        OR (status = 'upcoming' AND scheduled_at < NOW())`,
     [start, end]
   );
   return parseInt(rows[0].count) > 0;
