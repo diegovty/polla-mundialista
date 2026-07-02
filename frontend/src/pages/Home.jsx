@@ -275,7 +275,15 @@ export default function Home() {
                   <div className="text-xs font-bold text-wc-green">
                     <Countdown target={m.scheduled_at} />
                   </div>
-                  <div className="text-gray-300" style={{ fontSize: 9 }}>Grupo {m.group_name}</div>
+                  <div className="text-gray-300" style={{ fontSize: 9 }}>
+                    {m.stage === 'group'  ? `Grupo ${m.group_name}`
+                    : m.stage === 'last32' ? '16vos de final'
+                    : m.stage === 'last16' ? 'Octavos'
+                    : m.stage === 'quarter'? 'Cuartos'
+                    : m.stage === 'semi'   ? 'Semifinal'
+                    : m.stage === 'final'  ? 'Final'
+                    : ''}
+                  </div>
                 </div>
                 <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
                   <span className="text-sm font-semibold text-gray-700 truncate text-right">{m.team_b}</span>

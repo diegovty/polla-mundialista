@@ -8,23 +8,31 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // My prediction results by matchday (only finished matches)
-    const { rows: byDay } = await pool.query(`
-      SELECT m.matchday,
-        COALESCE(SUM(p.points_earned), 0) AS pts,
+    // My prediction totals across all stages
+    const { rows: [totals] } = await pool.query(`
+      SELECT
         COUNT(*) FILTER (WHERE p.points_earned = 3) AS exact,
         COUNT(*) FILTER (WHERE p.points_earned = 1) AS correct,
         COUNT(*) FILTER (WHERE p.points_earned = 0 AND m.status = 'finished') AS wrong
       FROM predictions p
       JOIN matches m ON m.id = p.match_id
-      WHERE p.user_id = $1 AND m.stage = 'group'
+      WHERE p.user_id = $1 AND m.status = 'finished'
+    `, [userId]);
+
+    const totalExact   = parseInt(totals.exact   || 0);
+    const totalCorrect = parseInt(totals.correct || 0);
+    const totalWrong   = parseInt(totals.wrong   || 0);
+
+    // Points by matchday (group stage only — knockouts don't have matchday)
+    const { rows: byDay } = await pool.query(`
+      SELECT m.matchday,
+        COALESCE(SUM(p.points_earned), 0) AS pts
+      FROM predictions p
+      JOIN matches m ON m.id = p.match_id
+      WHERE p.user_id = $1 AND m.stage = 'group' AND m.status = 'finished'
       GROUP BY m.matchday
       ORDER BY m.matchday
     `, [userId]);
-
-    const totalExact   = byDay.reduce((s, r) => s + parseInt(r.exact),   0);
-    const totalCorrect = byDay.reduce((s, r) => s + parseInt(r.correct), 0);
-    const totalWrong   = byDay.reduce((s, r) => s + parseInt(r.wrong),   0);
 
     // Goals per matchday
     const { rows: goalsByDay } = await pool.query(`
@@ -36,14 +44,14 @@ router.get('/', requireAuth, async (req, res) => {
       ORDER BY matchday
     `);
 
-    // Tournament overview
+    // Tournament overview — all stages
     const { rows: [stats] } = await pool.query(`
       SELECT
         COUNT(*) FILTER (WHERE status = 'finished')  AS matches_played,
         COUNT(*) FILTER (WHERE status = 'live')      AS matches_live,
         COUNT(*) FILTER (WHERE status = 'upcoming')  AS matches_upcoming,
         COALESCE(SUM(score_a + score_b) FILTER (WHERE status = 'finished'), 0) AS total_goals
-      FROM matches WHERE stage = 'group'
+      FROM matches
     `);
 
     // Next 5 upcoming matches
